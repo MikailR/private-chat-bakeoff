@@ -3,73 +3,276 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Private chat bakeoff</title>
+  <title>Private chat bakeoff — architecture</title>
   <style>
     :root { color-scheme: light dark; }
-    body {
-      margin: 0;
-      font: 16px/1.45 system-ui, sans-serif;
-      background: #141210;
-      color: #f4efe6;
+    body { margin: 0; font: 17px/1.55 Georgia, "Iowan Old Style", serif; background: #f6f3ee; color: #1c1916; }
+    header { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1.25rem 0.5rem; }
+    h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 0.4rem; }
+    .lede { margin: 0; color: #4a433c; }
+    nav { max-width: 46rem; margin: 0 auto; padding: 1rem 1.25rem 0; }
+    nav a { margin-right: 1rem; }
+    article { max-width: 46rem; margin: 0 auto; padding: 0.5rem 1.25rem 2.5rem; }
+    article + article { border-top: 1px solid #ddd4c8; }
+    .kicker { font: 0.78rem/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #6b3a2a; margin: 1.5rem 0 0; }
+    .doc h1 { font-size: 1.45rem; margin-top: 0.3rem; }
+    .doc h2 { font-size: 1.15rem; margin-top: 1.6rem; }
+    pre, code { font: 0.86rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    pre { background: #efeae2; padding: 0.8rem 1rem; overflow: auto; border-radius: 6px; }
+    table { border-collapse: collapse; font: 0.92rem/1.4 ui-sans-serif, system-ui, sans-serif; width: 100%; }
+    th, td { border-bottom: 1px solid #ddd4c8; text-align: left; padding: 0.35rem 0.7rem 0.35rem 0; vertical-align: top; }
+    a { color: #6b3a2a; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #161412; color: #f3eee6; }
+      .lede { color: #c9bfb3; }
+      pre { background: #241f1b; }
+      th, td, article + article { border-color: #3a332c; }
+      a, .kicker { color: #e2b8a4; }
     }
-    header, footer { padding: 1.25rem 1.5rem 0.25rem; max-width: 1400px; }
-    h1 { font-size: 1.4rem; font-weight: 650; margin: 0 0 0.35rem; }
-    p { margin: 0.35rem 0; }
-    .lede { color: #d9cfc2; max-width: 70rem; }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      padding: 1rem 1.5rem 1.5rem;
-    }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-    article {
-      background: #211e1a;
-      border: 1px solid #3a342c;
-      border-radius: 12px;
-      overflow: hidden;
-      min-width: 0;
-    }
-    .meta { padding: 0.85rem 1rem 0.7rem; }
-    h2 { margin: 0; font-size: 1.05rem; }
-    .slot { color: #b7aa9a; font-size: 0.85rem; }
-    .critique { margin: 0.45rem 0 0; color: #efe6da; }
-    iframe {
-      width: 100%;
-      height: 720px;
-      border: 0;
-      border-top: 1px solid #3a342c;
-      background: #fff;
-    }
-    a { color: #f0c27a; }
-    footer { padding-bottom: 1.5rem; color: #b7aa9a; font-size: 0.9rem; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Private chat bakeoff</h1>
-    <p class="lede">Two local-first chat prototypes. Each frame is that slot’s static build. Nothing here calls a hosted chat API.</p>
+    <h1>Private local-first chat</h1>
+    <p class="lede">Two architecture and implementation notes for the same brief. Kiln is Grok 4.7. Still is GPT-6 Astra.</p>
   </header>
-  <main class="grid">
-    <article>
-      <div class="meta">
-        <h2>Kiln</h2>
-        <p class="slot">grok-4.7 · <a href="./previews/grok-4.7/">open preview</a></p>
-        <p class="critique">Real small on-device model in the tab; history in IndexedDB; CSP blocks remote chat APIs. Quality limited by 77M Flan-T5.</p>
-      </div>
-      <iframe title="Kiln preview" src="./previews/grok-4.7/"></iframe>
-    </article>
-    <article>
-      <div class="meta">
-        <h2>Still</h2>
-        <p class="slot">gpt-6-astra · <a href="./previews/gpt-6-astra/">open preview</a></p>
-        <p class="critique">Privacy boundary and persistence are real; default replies are deterministic local tools, not a generative model, unless the user runs Ollama locally.</p>
-      </div>
-      <iframe title="Still preview" src="./previews/gpt-6-astra/"></iframe>
-    </article>
-  </main>
-  <footer>
-    <p>Notes: <a href="./COMPARISON.md">COMPARISON.md</a> · <a href="./live-urls.md">live-urls.md</a> · <a href="./brief/CREATIVE_BRIEF.md">brief</a></p>
-  </footer>
+  <nav>
+    <a href="#kiln">Kiln</a>
+    <a href="#still">Still</a>
+  </nav>
+
+<article id="kiln">
+  <p class="kicker">Grok 4.7</p>
+  <div class="doc"><h1 id="kiln-architecture">Kiln architecture</h1>
+<p>Kiln is a local-first chat page. One person, one browser profile, a small model that runs in the tab. The page is a responsive web app (Vite, static files, <code>base: './'</code>), so the same build is the desktop view and the phone view. A native shell is out of scope.</p>
+<h2 id="where-the-model-runs">Where the model runs</h2>
+<p>Inference runs in the browser tab, on this device.</p>
+<p>A dedicated web worker loads <a href="https://huggingface.co/MBZUAI/LaMini-Flan-T5-77M">LaMini-Flan-T5-77M</a> (Apache-2.0) through Transformers.js and ONNX Runtime Web. The weights are the int8 ONNX files shipped in <code>public/models/</code>. The runtime is the single-thread <code>asyncify</code> WebAssembly build in <code>public/ort/</code>, copied from <code>onnxruntime-web</code> when you start or build the app. The worker forces <code>device: 'wasm'</code> and <code>dtype: 'q8'</code>.</p>
+<p>The UI thread never sends the prompt to a server. It posts the prompt to the worker. The worker returns text. Decoding happens in the tab.</p>
+<p>This is the on-device path for the prototype: real weights, local runtime, CPU via WebAssembly. A later phone build would keep this boundary and swap in a larger instruct model on WebGPU, or a native runtime (llama.cpp, MLX, or the platform ML stack) inside a web view. That packaging is not in this slice. See <code>NOTES.md</code>.</p>
+<h2 id="what-is-stored-and-where">What is stored, and where</h2>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Where</th>
+<th>Leaves the device?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Threads and messages</td>
+<td>IndexedDB database <code>kiln</code>, store <code>threads</code>, in this browser profile</td>
+<td>No</td>
+</tr>
+<tr>
+<td>The reply in progress</td>
+<td>Memory in the page, until it is finished and written to IndexedDB</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Model weights and WASM</td>
+<td>Static files of the app. The browser may keep its ordinary HTTP cache of those files</td>
+<td>The files are the app itself. The transcript is not among them</td>
+</tr>
+<tr>
+<td>Theme</td>
+<td>Follows the system color scheme. Nothing is written for it</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>Reloading the page reads IndexedDB and shows the same threads before the model finishes loading again. Closing the dev server does not delete that database. Starting the server and opening the page shows the history again.</p>
+<p>There is no account, no server database, and no sync store.</p>
+<h2 id="what-never-leaves-the-device">What never leaves the device</h2>
+<ul>
+<li>The message text, thread titles, and the fact of the conversation</li>
+<li>The prompt assembled for the model</li>
+<li>Activations and generated tokens</li>
+<li>The IndexedDB database</li>
+</ul>
+<p>The running app is not allowed to call a hosted chat API. <code>env.allowRemoteModels</code> is false, <code>local_files_only</code> is true, and the dev and preview servers send <code>Content-Security-Policy: connect-src 'self'</code>. A request to Hugging Face, a model CDN, or a chat vendor is blocked by that policy and would also fail the local-files setting.</p>
+<h2 id="what-network-calls-the-running-app-makes">What network calls the running app makes</h2>
+<p>None for inference.</p>
+<p>The page loads its own files from the same origin that served it: HTML, JS, CSS, fonts, the WebAssembly runtime, and the ONNX weights. With <code>npm run dev</code> or <code>npm run preview</code>, that origin is the local Vite process on this machine. If you later host the static <code>dist/</code> folder, the browser downloads those app files from that host once. It still does not post the transcript back.</p>
+<p>There is no analytics call, no telemetry, and no font or script CDN at runtime. Fonts are bundled. <code>Referrer-Policy</code> is <code>no-referrer</code>.</p>
+<p><code>npm install</code> talks to the npm registry. That is the install step, not the running app. <code>scripts/fetch-model.mjs</code> can re-download the weights from Hugging Face if those files are missing. The page never runs that script.</p>
+<h2 id="how-one-turn-works">How one turn works</h2>
+<ol>
+<li>The page opens IndexedDB and paints any saved threads.</li>
+<li>The worker loads <code>config.json</code>, the tokenizer, <code>encoder_model_quantized.onnx</code>, and <code>decoder_model_merged_quantized.onnx</code> from the same origin, then starts the WASM session.</li>
+<li>The person sends a message. The page writes the user turn to IndexedDB immediately.</li>
+<li>The worker runs a short text-to-text generation (greedy, at most 48 new tokens) and streams pieces back.</li>
+<li>The page writes the assistant turn to the same thread and IndexedDB.</li>
+</ol>
+<p>The model context is 512 tokens. The page keeps the latest turns, trimmed to about 1,200 characters, so the newest message stays inside that window.</p>
+<h2 id="left-out-on-purpose">Left out on purpose</h2>
+<p>Accounts, login, cloud sync, plugins, tools, voice, image generation, attachments, a model catalog, sharing, multi-user rooms, and an installable native shell. There is one page, not a set of product routes. Export and encryption beyond the browser profile are also out. The full list and the reason for the small model are in <code>NOTES.md</code>.</p>
+<h2 id="layout-of-the-code">Layout of the code</h2>
+<pre><code class="language-text">index.html          page shell
+src/main.ts         transcript, composer, thread list
+src/db.ts           IndexedDB
+src/prompt.ts       local prompt and reply cleanup
+src/worker.ts       transformers.js session, remote models off
+src/styles.css      layout for a wide window and a phone
+public/models/      vendored ONNX weights and tokenizer
+public/ort/         WASM runtime, copied at dev/build/preview
+</code></pre>
+<pre><code class="language-mermaid">flowchart TB
+  subgraph device [This device]
+    page[Kiln page]
+    idb[(IndexedDB)]
+    worker[Worker]
+    wasm[ONNX Runtime WASM]
+    weights[Weights shipped with the app]
+    page --&gt; idb
+    page --&gt; worker
+    worker --&gt; wasm
+    wasm --&gt; weights
+  end
+</code></pre>
+<p>Nothing in that diagram sends the transcript off the device.</p></div>
+  <div class="doc notes"><h1 id="notes">Notes</h1>
+<h2 id="how-to-run">How to run</h2>
+<p>Requirements: Node 20+ and a current Chrome, Firefox, or Safari. The review machine used Node 20 and Chrome.</p>
+<pre><code class="language-bash">npm install
+npm run dev
+</code></pre>
+<p>Vite serves <code>http://127.0.0.1:5173</code>. <code>npm run build</code> then <code>npm run preview</code> serves the production build at <code>http://127.0.0.1:4173</code>.</p>
+<p>The first visit reads about 95MB of weights from that local server into the tab. The status line shows load progress. After it says "On this device", send a message. Reload the page. The thread is still in the list. History is in IndexedDB, so it survives the reload even while the model is loading again.</p>
+<p><code>npm run verify</code> builds the app and drives Chrome through one real turn, a reload, the privacy panel, and a narrow viewport. It needs <code>/usr/bin/google-chrome</code>.</p>
+<p>If <code>public/models/</code> is missing, run <code>npm run fetch-model</code> once. That script is the only Hugging Face download, and the page does not call it. <code>public/ort/</code> is recreated from <code>node_modules</code> by <code>predev</code>, <code>prebuild</code>, and <code>prepreview</code>.</p>
+<h2 id="the-model-and-the-fallback">The model, and the fallback</h2>
+<p>The reply path is the real 77M model. There is no template bot behind it, and there is no hosted model behind it. If WebAssembly fails to start, the page shows the error and leaves the send button off. It does not invent a reply and it does not call an API.</p>
+<p>LaMini-Flan-T5-77M is a small instruction model (MBZUAI, Apache-2.0; ONNX weights packaged by Xenova for Transformers.js). It can answer a short question, make a short list, or greet you. It also wanders: arithmetic and some explanations come out garbled, and a long chat gets trimmed to the latest turns. That is the model, not a silent failure. The privacy panel names it so the limit is visible.</p>
+<p>The runtime is single-threaded <code>asyncify</code> WASM. That build runs without cross-origin isolation, which a static host such as GitHub Pages cannot easily add. It is slower than a threaded build on a tuned desktop. A short reply can take a few seconds in native CPU and longer in the tab. The status line stays on "Writing a reply…" until the worker finishes.</p>
+<h2 id="intended-on-device-path-beyond-this-slice">Intended on-device path beyond this slice</h2>
+<p>The boundary above is the one to keep: weights and the transcript stay on the device, and the reply is computed there.</p>
+<p>On a phone or a stronger desktop, the same page would load a larger instruct model (SmolLM2 or Llama 3.2 1B class) with WebGPU when the browser has it, and fall inside the device to a native runtime rather than to a chat API. A thin native shell (a web view, or a small desktop wrapper) would be packaging only. It is not in this prototype. The responsive layout is the mobile and desktop UI.</p>
+<h2 id="left-out-on-purpose">Left out on purpose</h2>
+<ul>
+<li>Accounts, passwords, and profiles</li>
+<li>Cloud sync, backup, and multi-device history</li>
+<li>Plugins, tools, browsing, and file uploads</li>
+<li>Voice, image generation, and image understanding</li>
+<li>A model picker or a download store inside the app</li>
+<li>Sharing, collaboration, and public links</li>
+<li>A native iOS or Android shell, and an installable PWA</li>
+<li>Export, search across chats, and rename</li>
+<li>Encryption beyond what the browser profile already provides</li>
+<li>Stop-generation. A reply runs to at most 48 new tokens, then the composer unlocks</li>
+</ul>
+<p>The slice is one private room: threads on this device, a reply from the local model, and a plain statement of what stays here.</p></div>
+</article>
+<article id="still">
+  <p class="kicker">GPT-6 Astra</p>
+  <div class="doc"><h1 id="still-architecture-and-privacy-boundary">Still: architecture and privacy boundary</h1>
+<p>Still is a small responsive web app, with no frontend framework, package dependencies, or remote chat API. It is a prototype of the conversation and local storage boundary, not a finished private assistant.</p>
+<h2 id="where-replies-and-models-run">Where replies and models run</h2>
+<p>There are two explicitly selected engines:</p>
+<ol>
+<li><strong>Offline tools (default, working here):</strong> JavaScript in a dedicated browser Web Worker. A recursive-descent calculator, frequency-ranked extractive summarizer, task-list planner, name lookup over this conversation, and a small bag-of-words retrieval index over bundled help text produce useful replies. This is deterministic software, <strong>not a generative language model and not pretrained on-device weights</strong>. Unsupported questions get a candid capability explanation, not a fabricated answer.</li>
+<li><strong>Ollama (optional full LLM):</strong> the browser sends the conversation to this app's Node server on loopback. Node calls only <code>http://127.0.0.1:11434</code>, using locally installed <strong>llama3.2:1b</strong> weights. The model computes on that computer's CPU/GPU. It is never a remote inference URL. Users explicitly check and select this engine. Failure produces an error and a retry action; it never falls back to cloud or quietly changes engines.</li>
+</ol>
+<p>No model runtime or weights were installed in the build environment, and DNS/package/model downloads were unavailable. The shipped offline fallback is functional and tested; real Llama generation could not be exercised here. The optional local server integration is implemented and tested against a local protocol fixture, which is not evidence of real model quality.</p>
+<pre><code class="language-text">                         THIS DEVICE
+┌─────────────────────────────────────────────────────────────┐
+│ Browser UI ── message ──► browser worker (offline tools)       │
+│     │                        │                              │
+│     └──────── reply ◄────────┘                              │
+│     │                                                       │
+│     ├──► localStorage: conversations + selected engine       │
+│     └──► Cache Storage: application code only                │
+│                                                             │
+│ Optional, explicitly selected local LLM:                     │
+│ Browser → Node :5173 → Ollama 127.0.0.1:11434 → local weights  │
+└─────────────────────────────────────────────────────────────┘
+No hosted chat API. No accounts, transcript uploads, or sync.
+</code></pre>
+<h2 id="what-is-written-to-disk">What is written to disk</h2>
+<ul>
+<li>Browser localStorage under <code>still:v1:&lt;base-path&gt;</code>: versioned conversations (IDs, titles, timestamps, roles, content, completion/error status, engine), active conversation ID, and selected engine. All history stays in this device's browser profile. It is isolated by browser origin, with an additional app-path namespace.</li>
+<li>The user message and pending reply marker are saved <strong>before</strong> generation. The finished reply is saved immediately. Reload turns an unfinished marker into a visible interrupted state with retry. Unsaved composer drafts are not retained.</li>
+<li>Cache Storage holds only a fixed list of public application assets so a previously loaded app can reload offline on localhost or HTTPS. The service worker never caches API traffic or transcripts.</li>
+<li>Explicit text export creates a local plaintext download. The app itself has no backup or export upload endpoint.</li>
+<li>The Node process stores no transcripts on disk and writes no request or response logs. In Ollama mode it handles messages transiently in memory. Ollama stores model weights in its normal model directory; model inference requests set <code>keep_alive: 0</code>. The user's installed Ollama process, OS swap, and OS/browser backups are outside this application's control.</li>
+</ul>
+<p>History is <strong>not encrypted at rest</strong>. Access to the browser profile, a compromised same-origin page, malicious extensions, or a compromised device can expose it. “Delete” removes browser records; it is not forensic disk erasure and cannot remove previously exported copies or backups. Private browsing, browser cleanup, storage quotas, or switching origins/ports can make history unavailable. Errors saving are shown as <strong>Not saved</strong>; the app does not claim successful persistence after a failed write. Unreadable saved data is left untouched until the user explicitly clears it.</p>
+<p>A storage event from another tab stops editing and asks for reload, preventing the common cross-tab stale overwrite. This prototype is intended for one active tab; simultaneous writes in the same instant are not a transactionally supported multi-tab workflow.</p>
+<h2 id="network-calls-made-by-the-running-app">Network calls made by the running app</h2>
+<p><strong>Default engine:</strong> initial/reload GET requests for its own HTML, CSS, JavaScript, SVG icon, and service worker. There are no inference fetches. User text goes to a worker by in-process messaging and to localStorage; <strong>it is never sent to the web host or any remote chat API</strong>. No CDN, remote fonts, images, analytics, error reporting, or telemetry.</p>
+<p><strong>Optional Ollama:</strong> only after selection/check, a same-origin GET <code>./api/status</code>; on sending, POST <code>./api/chat</code>. Node verifies local model metadata using Ollama's <code>/api/show</code> before every generation and calls its <code>/api/chat</code>. All these requests stay on loopback. The bridge is fixed to one model and one endpoint; it refuses metadata with <code>remote_host</code> or <code>remote_model</code>, missing GGUF format, or missing parameter count. HTTP redirects are refused. There is no API key or arbitrary URL field.</p>
+<p>Start Ollama with <strong><code>OLLAMA_NO_CLOUD=1</code></strong>; this is part of the documented setup, not an environment setting the web app can enforce in an already-running third-party process. Do not replace the trusted local daemon with a forwarding proxy. The app cannot prove what a malicious daemon does. Model installation/download is a separate, user-initiated internet operation that carries no conversation. Cloud-backed aliases are unsupported. <a href="https://docs.ollama.com/faq#how-do-i-disable-ollama-cloud-features">Ollama's official local-only configuration</a> documents the cloud-disable switch.</p>
+<p>The Node server defaults to <code>127.0.0.1</code>. Its bridge validates peer IP, Host/port, Origin, fetch-site, and a custom request header, with no CORS permissions. It rejects requests arriving from another device. The frontend also refuses to POST conversations unless its own hostname is loopback. Thus a public static deployment cannot accidentally POST transcripts to its host.</p>
+<p>Static deployment on HTTPS (including a GitHub Pages subpath) contacts that host to load app files, exposing ordinary connection metadata, not chats. Cached offline reloads work after successful service worker installation. A phone loading assets from a desktop over LAN still processes offline-tool messages <strong>on the phone</strong>; it cannot use that desktop's model bridge.</p>
+<h2 id="implementation-and-verification-plan">Implementation and verification plan</h2>
+<p>Implemented in this slice:</p>
+<ol>
+<li>Build a responsive, keyboard-accessible conversation UI, small-screen drawer, local history, engine/privacy dialogs, and explicit deletion/export.</li>
+<li>Persist a schema-checked state snapshot before/after each turn. Recover interrupted turns; expose corruption/quota errors rather than silently resetting data.</li>
+<li>Keep offline computation in a worker, support cancellation, and render user/model output as plain text so HTML, scripts, and image URLs cannot execute or fetch.</li>
+<li>Add a same-device Ollama bridge with request bounds, local-weight verification, cancellation/timeouts, no redirects, no transcript logs, and no remote fallback.</li>
+<li>Build by syntax-checking and copying app assets into <code>dist/</code>; all URLs are relative. The build and 17 engine/storage/server checks pass. A browser verification script covers chat/reload, offline operation, mobile layout, deletion, and observed requests; execution here was blocked by sandbox socket and Chrome startup restrictions (<code>EPERM</code>). That browser/visual verification remains for a normal Linux environment. See the exact results in NOTES.md.</li>
+</ol>
+<h2 id="intended-on-device-llm-path-and-intentional-omissions">Intended on-device LLM path and intentional omissions</h2>
+<p>The future browser-native path would replace the worker adapter with a quantized small instruction model in a WebGPU/WASM runtime. Ship/version the runtime locally, require explicit one-time weight download or local import, verify hashes, and store weights in OPFS/IndexedDB. Check device memory and WebGPU support before enabling it. Chat text would stay inside the worker; no inference server would be required, including on mobile. Weight eviction, storage pressure, runtime compatibility, and model licensing need evaluation before promising this path. <strong>It is not implemented here.</strong></p>
+<p>Intentionally left out: accounts, sync, remote providers, plugins, voice, image generation, attachments, browsing, tools with side effects, a model marketplace, native shells, encryption/key management, token streaming, Markdown/HTML rendering, a persistent cross-chat memory, and production hardening. This is one coherent, inspectable conversation slice.</p></div>
+  <div class="doc notes"><h1 id="running-and-reviewing-still">Running and reviewing Still</h1>
+<h2 id="no-download-path">No-download path</h2>
+<p>Requirements: Node 20.19+ and a modern browser.</p>
+<pre><code class="language-sh">npm start
+</code></pre>
+<p>Visit <strong>http://127.0.0.1:5173</strong>. No npm install, credentials, network, or model setup is needed. Change the port with <code>PORT=5180 npm start</code>; note that a different origin/port has different browser storage.</p>
+<p>Try a complete persisted turn:</p>
+<ol>
+<li>Click <strong>Work it out</strong>. Review the inserted prompt and send it.</li>
+<li>The offline worker calculates <code>180 * 0.15 + 24 = 51</code>.</li>
+<li>Reload the page; both messages and the sidebar conversation remain.</li>
+<li>Send <code>My name is Alex.</code>, reload, and then <code>What is my name?</code> to check local conversation context.</li>
+<li>Try <strong>Find the essentials</strong> in a new conversation for a summary computed from the actual supplied text.</li>
+</ol>
+<p>Desktop: Enter sends, Shift+Enter adds a line. On a touch device, Enter adds a line; use the send button. The stop button cancels an in-flight reply. Failed or interrupted replies have a retry button.</p>
+<p>The default <strong>Offline tools</strong> engine is a deliberately limited rule-based and text-retrieval fallback, not an LLM, mock network response, hidden cloud call, or pretrained tiny model. Summaries select sentences rather than paraphrasing; plans preserve supplied task order. Arithmetic uses IEEE-754 numbers with a 12-significant-digit display and supports +, -, *, /, ^, %, and parentheses. Percentage means division by 100. This is useful for demonstrating a real local processing/persistence turn, but it is not a general ChatGPT replacement.</p>
+<p>No model server, weights, or ML runtime existed here. DNS requests to package/model registries failed, so downloading a real on-device model was impractical. Full language-model quality is explicitly left to the optional local path below.</p>
+<h2 id="full-local-model-path">Full local model path</h2>
+<p>Install <a href="https://ollama.com/download">Ollama</a> separately when network access is available. Then, in one terminal, start a local-only server:</p>
+<pre><code class="language-sh">OLLAMA_HOST=127.0.0.1:11434 OLLAMA_NO_CLOUD=1 ollama serve
+</code></pre>
+<p>If an Ollama service is already listening, stop/reconfigure it first. Setting this environment variable on a second command does not change an existing process. In another terminal:</p>
+<pre><code class="language-sh">ollama pull llama3.2:1b
+npm start
+</code></pre>
+<p>The pull downloads weights once. Open Still on <strong>the same computer</strong>, choose the engine control below the composer, and click <strong>Check local model</strong>. Subsequent messages use the real installed Llama model. No sign-in or API key is required. Still never pulls weights automatically and never calls a hosted chat API.</p>
+<p>Only <code>llama3.2:1b</code> at <code>127.0.0.1:11434</code> is supported. Remote/cloud metadata is rejected before sending chat content. Disable Ollama cloud features as above. The bridge caps total conversation text at 16,000 characters, uses an 8,192-token context, generates at most 512 tokens, unloads weights after a request, and times out at 120 seconds. Tokenization varies; very long or non-English context may exhaust the model window earlier. Start a new chat if a context error occurs. CPU speed, available memory, and answer quality depend on your installation.</p>
+<p>The browser sends complete conversation context, excluding errors and pending markers, to the <strong>same-device</strong> Node bridge. No web search, file access, tools, or external provider fallback exists. The daemon is a trusted part of this privacy boundary. See <a href="./ARCHITECTURE.md">ARCHITECTURE.md</a>.</p>
+<h2 id="static-hosting-and-mobile">Static hosting and mobile</h2>
+<pre><code class="language-sh">npm run build
+npm run preview
+</code></pre>
+<p><code>dist/</code> contains plain static files with relative URLs (equivalent to Vite <code>base: './'</code>). Upload the contents to any static subpath; no deployment is performed by this project. Serve the directory over HTTP/HTTPS, not <code>file://</code>. A Python-only option after building is <code>python3 -m http.server 5173 --directory dist --bind 127.0.0.1</code>.</p>
+<p>Offline tools work on desktop and mobile browsers. On HTTPS/localhost, wait for the service worker to install once; the app can then reload offline and generate offline replies. App shell caching never includes API calls. On ordinary HTTP LAN origins, service workers may be unavailable; keep the static server running for reloads.</p>
+<p>To try the responsive UI on a phone on your trusted LAN, use <code>HOST=0.0.0.0 npm start</code> and open the computer's LAN address. This exposes app assets, not a working remote-inference bridge. The phone's chat history and offline processing stay on the phone. No native iOS/Android app or cross-device sync is included.</p>
+<p>On a public static site, the engine picker explains why Ollama is unavailable. The frontend will not POST a transcript to that site.</p>
+<h2 id="storage-limits-and-failure-behavior">Storage, limits, and failure behavior</h2>
+<ul>
+<li>Up to 50 conversations, 200 messages per conversation, and 12,000 characters per message. History is a schema-versioned localStorage snapshot; local writes are synchronous and small at prototype scale.</li>
+<li>Conversations are plaintext, scoped to the origin/browser profile and app base path. They do not travel with you to another browser/device. Clearing browser data loses them.</li>
+<li>Storage failures show a warning and <strong>Not saved</strong>. The current tab can still work in memory. Export a text copy before closing if persistence is unavailable.</li>
+<li>Corrupt/unknown-version history is never silently overwritten. Explicitly deleting all history resets it. There is no migration/import UI.</li>
+<li>No autosaved draft; no automatic cloud backup. Export is a local text download.</li>
+<li>Another tab editing the same history disables this tab's editing until reload; simultaneous multi-tab writes are outside the slice.</li>
+<li>No guaranteed secure deletion, at-rest encryption, key management, or protection from malicious extensions/OS access.</li>
+<li>User/model content is rendered as text; links, remote images, and HTML do not execute. Model errors never trigger a hosted fallback.</li>
+</ul>
+<h2 id="validation">Validation</h2>
+<pre><code class="language-sh">npm run build
+npm test
+npm run test:browser
+</code></pre>
+<p>Unit/integration tests use Node's built-in test runner. Browser tests use the installed Google Chrome executable and the Chrome DevTools Protocol over process pipes; no downloaded testing package is required. Set <code>CHROME_BIN</code> if Chrome is installed elsewhere. On a successful run, screenshots are written to <code>test-artifacts/</code>; the temporary browser profile is inside this slot and removed after testing.</p>
+<p>The included browser suite checks a real worker reply and reload persistence, calculation and name context, fresh-chat navigation, mobile overflow and drawer, local deletion, offline reload with the static server stopped, model-unavailable errors, and network privacy. Server tests use in-process request/response streams and a deterministic Ollama protocol fixture to validate forwarding and safeguards without opening sockets.</p>
+<p><strong>Results in this build environment:</strong> the build and all 17 engine/storage/server checks passed, including a real offline reply saved and rehydrated for a follow-up. HTML IDs and asset references also passed integrity checks. Live browser verification was attempted but <strong>blocked</strong>, not passed: localhost socket binding returned <code>EPERM</code>, and Chrome startup was separately denied by the sandbox. There are no claimed browser screenshots or completed visual checks. Run <code>npm run test:browser</code> on a normal Linux machine to complete that verification. <strong>Real Llama inference was also not tested because weights/runtime were unavailable.</strong></p>
+<p>Intentionally omitted: accounts, sync, plugins, voice, image generation, browsing, uploads, native shells, encryption, rich Markdown, token streaming, and model discovery. No dependencies need downloading; no hosted chat API was used.</p></div>
+</article>
 </body>
 </html>
