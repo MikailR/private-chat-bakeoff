@@ -1,0 +1,28 @@
+{
+  "name": "kiln",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Kiln is a private local-first chat. The model runs in the browser and history stays on the device.",
+  "scripts": {
+    "copy-runtime": "node scripts/copy-runtime.mjs",
+    "fetch-model": "node scripts/fetch-model.mjs",
+    "predev": "node scripts/copy-runtime.mjs",
+    "prebuild": "node scripts/copy-runtime.mjs",
+    "prepreview": "node scripts/copy-runtime.mjs",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "@fontsource/fraunces": "^5.2.9",
+    "@fontsource/outfit": "^5.2.8",
+    "@huggingface/transformers": "^4.3.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.23.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.3"
+  }
+}
