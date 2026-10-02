@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f6f2">
+  <meta name="description" content="Still is a quiet, private space to think. A local-first chat prototype with offline tools and optional local inference.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Still — a space of your own</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#composer">Skip to message</a>
+  <div class="workspace">
+    <div id="sidebar-scrim" class="sidebar-scrim" hidden></div>
+    <aside class="sidebar" id="sidebar" aria-label="Conversations">
+      <a class="brand" href="./" aria-label="Still home"><img src="./icon.svg" alt="" width="37" height="37"><span>still<span class="brand-dot">.</span></span><span class="prototype">PREVIEW</span></a>
+      <button class="new-chat" id="new-chat"><span data-icon="plus"></span>New conversation<span class="shortcut" aria-hidden="true">↗</span></button>
+      <div class="history-heading"><span>YOUR CONVERSATIONS</span><span id="history-count">0</span></div>
+      <nav id="history" class="history" aria-label="Saved conversations"></nav>
+      <div class="sidebar-bottom">
+        <div class="local-note"><span class="local-note-icon" data-icon="sprout"></span><p>A little less cloud.<br>A little more you.</p><span>Your space. On your device.</span></div>
+        <button class="sidebar-link" id="privacy-button"><span data-icon="shield"></span>Privacy & storage<span data-icon="arrow-right"></span></button>
+        <div class="sidebar-foot"><span class="status-dot"></span>Private by default<span>v0.1</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="menu-button" aria-label="Open conversations" aria-expanded="false" aria-controls="sidebar"><span data-icon="menu"></span></button>
+        <div class="breadcrumb"><span>Your workspace</span><span class="breadcrumb-separator">/</span><span id="conversation-title">New conversation</span></div>
+        <button class="device-badge" id="device-button"><span data-icon="lock"></span><span>On this device</span></button>
+        <button class="icon-button" id="conversation-options" aria-label="Conversation options" title="Conversation options" hidden><span data-icon="more"></span></button>
+      </header>
+      <div class="conversation-scroll" id="conversation-scroll">
+        <section class="welcome" id="welcome" aria-labelledby="welcome-title">
+          <div class="welcome-art" aria-hidden="true">
+            <svg viewBox="0 0 180 132" fill="none"><ellipse cx="90" cy="65" rx="72" ry="25" transform="rotate(-30 90 65)"/><ellipse cx="90" cy="65" rx="72" ry="25" transform="rotate(30 90 65)"/><ellipse cx="90" cy="65" rx="28" ry="55"/><circle class="art-core" cx="90" cy="65" r="26"/><path class="art-spark" d="M90 52v26M77 65h26M81 56l18 18M81 74l18-18"/><circle class="art-dot" cx="151" cy="30" r="4"/><circle class="art-dot-small" cx="33" cy="102" r="2.5"/></svg>
+          </div>
+          <div class="eyebrow">A SPACE OF YOUR OWN</div>
+          <h1 id="welcome-title">Your thoughts.<br>Your space.</h1>
+          <p class="welcome-description">A little room to think, without an audience.<br>Private conversations that stay with you.</p>
+          <div class="suggestions" aria-label="Try a conversation starter">
+            <button class="suggestion" data-prompt="Help me plan a focused morning: finish my proposal, clear my inbox, and take a walk."><span class="suggestion-icon" data-icon="sun"></span><strong>Make room for focus</strong><span>Turn a busy morning into a plan</span><span class="suggestion-arrow" data-icon="arrow-up-right"></span></button>
+            <button class="suggestion" data-prompt="Summarize these notes: We tested the prototype with five people. Everyone completed their first conversation. Three people couldn't find the delete button. The team will improve the navigation before the next test. The next test is on Friday."><span class="suggestion-icon" data-icon="align"></span><strong>Find the essentials</strong><span>Make a long note a little lighter</span><span class="suggestion-arrow" data-icon="arrow-up-right"></span></button>
+            <button class="suggestion" data-prompt="What is 180 * 0.15 + 24?"><span class="suggestion-icon" data-icon="calculator"></span><strong>Work it out</strong><span>A quick calculation, just for you</span><span class="suggestion-arrow" data-icon="arrow-up-right"></span></button>
+          </div>
+          <div class="welcome-engine"><span class="status-dot"></span><span>Offline tools are ready.</span><button id="welcome-engine-button">Want a full local model? <span aria-hidden="true">↗</span></button></div>
+        </section>
+        <section id="messages" class="messages" aria-label="Conversation" aria-live="polite" aria-relevant="additions text" hidden></section>
+      </div>
+      <div class="composer-area">
+        <div id="notice" class="notice" role="status" hidden></div>
+        <form class="composer" id="composer-form">
+          <label class="sr-only" for="composer">Your message</label>
+          <textarea id="composer" name="message" placeholder="What’s on your mind?" rows="2" maxlength="12000" required></textarea>
+          <div class="composer-toolbar">
+            <button class="engine-button" type="button" id="engine-button"><span class="engine-icon" data-icon="cpu"></span><span id="engine-label">Offline tools</span><span data-icon="chevron-down"></span></button>
+            <span id="engine-tag" class="engine-tag">Built-in · no download</span><span class="composer-spacer"></span><span class="enter-hint">Enter to send</span>
+            <button class="send-button" id="send-button" type="submit" aria-label="Send message" disabled><span data-icon="arrow-up"></span></button>
+            <button class="send-button stop-button" id="stop-button" type="button" aria-label="Stop reply" hidden><span data-icon="stop"></span></button>
+          </div>
+        </form>
+        <p class="composer-footnote"><span data-icon="lock"></span>Your words stay on this device.<button id="privacy-footer">Learn how</button><span class="footnote-limit" id="footnote-limit">Limited offline assistant · not an LLM</span></p>
+      </div>
+    </main>
+  </div>
+  <dialog id="privacy-dialog" aria-labelledby="privacy-title">
+    <div class="dialog-top"><span class="dialog-icon" data-icon="shield"></span><button class="icon-button" data-close aria-label="Close privacy details"><span data-icon="close"></span></button></div>
+    <div class="eyebrow">PRIVATE BY DESIGN</div><h2 id="privacy-title">Here means here.</h2>
+    <p class="dialog-intro">Your conversation belongs on your device. Here’s exactly what that means in this prototype.</p>
+    <div class="privacy-row"><span data-icon="cpu"></span><div><h3>Replies happen locally</h3><p>Offline tools run in this browser. The optional language model runs in Ollama on this same computer. No hosted chat API.</p></div></div>
+    <div class="privacy-row"><span data-icon="hard-drive"></span><div><h3>History stays in this browser</h3><p>Messages, titles, and your engine choice are saved in local storage. No accounts, analytics, or sync. App files are cached for offline reloads.</p></div></div>
+    <div class="privacy-row"><span data-icon="eye"></span><div><h3>Private doesn’t mean encrypted</h3><p>History is plain text in your browser profile. Someone with access to that profile can read it. Clearing browser data removes your chats; private browsing may not retain them.</p></div></div>
+    <div class="storage-summary"><span>Saved on this browser</span><strong id="storage-summary">0 conversations · 0 KB</strong></div>
+    <button class="danger-link" id="clear-all">Delete all conversations</button>
+  </dialog>
+  <dialog id="engine-dialog" aria-labelledby="engine-title">
+    <div class="dialog-top"><span class="dialog-icon" data-icon="cpu"></span><button class="icon-button" data-close aria-label="Close engine settings"><span data-icon="close"></span></button></div>
+    <div class="eyebrow">KEEP IT CLOSE</div><h2 id="engine-title">Choose what’s thinking.</h2>
+    <p class="dialog-intro">Two local paths. Your messages never go to a hosted chat service.</p>
+    <button class="engine-choice" id="choose-builtin"><span class="engine-choice-icon" data-icon="sprout"></span><span><strong>Offline tools <small>READY NOW</small></strong><span>A small, built-in assistant for plans, summaries, and calculations. Uses rules and text retrieval, not an LLM.</span></span><span class="engine-check" data-icon="check"></span></button>
+    <div class="engine-choice ollama-choice"><span class="engine-choice-icon" data-icon="cpu"></span><div><strong>Ollama <small>LOCAL MODEL</small></strong><p>A fuller conversation with Llama 3.2 1B, running on your computer.</p><p class="setup-label">After installing Ollama, run:</p><pre><code>OLLAMA_NO_CLOUD=1 ollama serve
+ollama pull llama3.2:1b</code></pre><p class="setup-note">Run these in separate terminals. Downloading weights needs internet once. Start the Ollama server with cloud features disabled.</p><button class="secondary-button" id="connect-ollama">Check local model <span data-icon="arrow-right"></span></button><p class="connection-status" id="connection-status" role="status">Only 127.0.0.1:11434. No custom endpoints.</p></div></div>
+    <p class="dialog-bottom-note">On mobile or a static site, use offline tools. The Ollama bridge requires this app’s local Node server on the same device.</p>
+  </dialog>
+  <dialog id="options-dialog" aria-labelledby="options-title"><div class="dialog-top"><h2 id="options-title">This conversation</h2><button class="icon-button" data-close aria-label="Close conversation options"><span data-icon="close"></span></button></div><button class="option-action" id="export-chat"><span data-icon="download"></span>Save a text copy<span data-icon="arrow-right"></span></button><button class="option-action danger-link" id="delete-chat"><span data-icon="trash"></span>Delete conversation<span data-icon="arrow-right"></span></button></dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="eyebrow">YOUR STORAGE, YOUR CHOICE</div><h2 id="confirm-title">Delete this conversation?</h2><p id="confirm-description">This removes it from this browser. There is no cloud copy to restore.</p><div class="confirm-actions"><button class="secondary-button" id="cancel-delete">Keep it</button><button class="primary-button" id="confirm-delete">Delete conversation</button></div></dialog>
+</body>
+</html>

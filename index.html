@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Private chat bakeoff</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0;
+      font: 16px/1.45 system-ui, sans-serif;
+      background: #141210;
+      color: #f4efe6;
+    }
+    header, footer { padding: 1.25rem 1.5rem 0.25rem; max-width: 1400px; }
+    h1 { font-size: 1.4rem; font-weight: 650; margin: 0 0 0.35rem; }
+    p { margin: 0.35rem 0; }
+    .lede { color: #d9cfc2; max-width: 70rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem 1.5rem 1.5rem;
+    }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    article {
+      background: #211e1a;
+      border: 1px solid #3a342c;
+      border-radius: 12px;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .meta { padding: 0.85rem 1rem 0.7rem; }
+    h2 { margin: 0; font-size: 1.05rem; }
+    .slot { color: #b7aa9a; font-size: 0.85rem; }
+    .critique { margin: 0.45rem 0 0; color: #efe6da; }
+    iframe {
+      width: 100%;
+      height: 720px;
+      border: 0;
+      border-top: 1px solid #3a342c;
+      background: #fff;
+    }
+    a { color: #f0c27a; }
+    footer { padding-bottom: 1.5rem; color: #b7aa9a; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Private chat bakeoff</h1>
+    <p class="lede">Two local-first chat prototypes. Each frame is that slot’s static build. Nothing here calls a hosted chat API.</p>
+  </header>
+  <main class="grid">
+    <article>
+      <div class="meta">
+        <h2>Kiln</h2>
+        <p class="slot">grok-4.7 · <a href="./previews/grok-4.7/">open preview</a></p>
+        <p class="critique">Real small on-device model in the tab; history in IndexedDB; CSP blocks remote chat APIs. Quality limited by 77M Flan-T5.</p>
+      </div>
+      <iframe title="Kiln preview" src="./previews/grok-4.7/"></iframe>
+    </article>
+    <article>
+      <div class="meta">
+        <h2>Still</h2>
+        <p class="slot">gpt-6-astra · <a href="./previews/gpt-6-astra/">open preview</a></p>
+        <p class="critique">Privacy boundary and persistence are real; default replies are deterministic local tools, not a generative model, unless the user runs Ollama locally.</p>
+      </div>
+      <iframe title="Still preview" src="./previews/gpt-6-astra/"></iframe>
+    </article>
+  </main>
+  <footer>
+    <p>Notes: <a href="./COMPARISON.md">COMPARISON.md</a> · <a href="./live-urls.md">live-urls.md</a> · <a href="./brief/CREATIVE_BRIEF.md">brief</a></p>
+  </footer>
+</body>
+</html>
