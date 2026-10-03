@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Architecture, first principles</title>
+<style>
+:root { color-scheme: light dark; }
+body { margin: 0; font: 17px/1.5 Georgia, "Iowan Old Style", serif; background: #f6f3ee; color: #1c1916; }
+main { max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+h1 { font-size: 1.7rem; letter-spacing: -0.02em; margin: 0 0 0.4rem; }
+h2 { font-size: 1.15rem; margin-top: 2rem; }
+.lede, .note { color: #4a433c; }
+a { color: #6b3a2a; }
+.back { font: 0.85rem/1.2 ui-sans-serif, system-ui, sans-serif; }
+.diagram { font: 0.92rem/1.35 ui-sans-serif, system-ui, sans-serif; background: #efeae2; border-radius: 10px; padding: 1rem; overflow: auto; }
+.row { display: flex; gap: 0.6rem; align-items: stretch; flex-wrap: wrap; }
+.box { flex: 1; min-width: 8rem; background: #fff; border: 1px solid #ddd4c8; border-radius: 8px; padding: 0.6rem 0.7rem; }
+.box strong { display: block; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: #6b3a2a; }
+.arrow { align-self: center; color: #6b3a2a; font-weight: 700; }
+.wall { margin-top: 0.7rem; border: 1px dashed #6b3a2a; border-radius: 8px; padding: 0.6rem 0.7rem; }
+ol li, ul li { margin: 0.35rem 0; }
+code { font: 0.86rem/1.4 ui-monospace, Menlo, monospace; }
+@media (prefers-color-scheme: dark) {
+  body { background: #161412; color: #f3eee6; }
+  .lede, .note { color: #c9bfb3; }
+  .diagram { background: #241f1b; }
+  .box { background: #1c1916; border-color: #3a332c; }
+  a, .arrow, .box strong { color: #e2b8a4; }
+  .wall { border-color: #e2b8a4; }
+}
+</style></head><body><main>
+<p class="back"><a href="../">Bakeoff</a></p>
+<h1>Private chat, from first principles</h1>
+<p class="lede">One person, one device. A message goes in, a reply comes back, and the transcript stays on that device. Everything else is optional.</p>
+
+<h2>The three pieces</h2>
+<div class="diagram">
+  <div class="row">
+    <div class="box"><strong>1. Conversation</strong>What you type and what you read. It does not compute the reply.</div>
+    <div class="arrow">→</div>
+    <div class="box"><strong>2. Memory</strong>The transcript, saved on this device before and after the reply.</div>
+    <div class="arrow">→</div>
+    <div class="box"><strong>3. Model</strong>Turns the recent transcript into the next sentence. Runs on this device.</div>
+  </div>
+  <div class="wall"><strong>The wall.</strong> The sentence crosses from the conversation to the model inside the device. It is not posted to a chat service. Loading the app (HTML, or later the App Store binary) is a download. The chat is not part of that download.</div>
+</div>
+
+<h2>One turn</h2>
+<div class="diagram">
+  <div class="row">
+    <div class="box"><strong>Write</strong>Save your message locally first, so a crash does not lose it.</div>
+    <div class="arrow">→</div>
+    <div class="box"><strong>Infer</strong>Hand the recent turns to the on-device model. No network call.</div>
+    <div class="arrow">→</div>
+    <div class="box"><strong>Write</strong>Save the reply in the same local store.</div>
+  </div>
+</div>
+<p>If inference fails, the transcript still shows your message and an error. The app does not quietly send the text somewhere else to get an answer.</p>
+
+<h2>Where the model can sit</h2>
+<div class="diagram">
+  <div class="row">
+    <div class="box"><strong>In the app</strong>Weights and runtime live in the process (browser worker, or on iOS a native runtime). This is the shape to explain and to ship. Kiln did this with a tiny model in the tab.</div>
+    <div class="box"><strong>Beside the app</strong>The app asks a program on the same machine (Ollama on loopback). Still designed this as an optional path and refused to pretend it had been run. A phone does not have that side process unless the app itself contains the runtime.</div>
+  </div>
+</div>
+
+<h2>What each bakeoff actually argued</h2>
+<p><strong>Still (Codex, GPT-6 Astra)</strong> is the document to learn from. It separates “a reply” from “a language model,” draws the wall (what is stored, what a request is allowed to be, what happens when saving fails), and says the real local model was not exercised here.</p>
+<p><strong>Kiln (Grok 4.7)</strong> is the proof that weights can run in the client: a 77M model, ONNX, WebAssembly, history in IndexedDB. The writeup mostly describes that page. The model is too small to be the product idea, and the weights arrive as part of the site download, then stay in the browser cache. They were not already on your Mac.</p>
+
+<h2>What we are not building yet</h2>
+<ul>
+  <li>Accounts, sync, or a copy of the chat in the cloud.</li>
+  <li>Voice, images, plugins, or a catalog of models.</li>
+  <li>System One models (Laya, OpenJev, Kev). Those pick or score. They do not write the reply. They can sit in front later, as a fast local decision, not as the chat model.</li>
+</ul>
+<p class="note">Next step is a native iOS shell of this same picture: conversation, on-device memory, on-device model. That path is the <a href="testflight.html">TestFlight runbook</a>.</p>
+</main></body></html>

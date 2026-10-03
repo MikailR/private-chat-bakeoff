@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TestFlight runbook</title>
+<style>
+:root { color-scheme: light dark; }
+body { margin: 0; font: 17px/1.5 Georgia, "Iowan Old Style", serif; background: #f6f3ee; color: #1c1916; }
+main { max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+h1 { font-size: 1.7rem; letter-spacing: -0.02em; margin: 0 0 0.4rem; }
+h2 { font-size: 1.15rem; margin-top: 2rem; }
+.lede, .note { color: #4a433c; }
+a { color: #6b3a2a; }
+.back { font: 0.85rem/1.2 ui-sans-serif, system-ui, sans-serif; }
+.diagram { font: 0.92rem/1.35 ui-sans-serif, system-ui, sans-serif; background: #efeae2; border-radius: 10px; padding: 1rem; overflow: auto; }
+.row { display: flex; gap: 0.6rem; align-items: stretch; flex-wrap: wrap; }
+.box { flex: 1; min-width: 8rem; background: #fff; border: 1px solid #ddd4c8; border-radius: 8px; padding: 0.6rem 0.7rem; }
+.box strong { display: block; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: #6b3a2a; }
+.arrow { align-self: center; color: #6b3a2a; font-weight: 700; }
+.wall { margin-top: 0.7rem; border: 1px dashed #6b3a2a; border-radius: 8px; padding: 0.6rem 0.7rem; }
+ol li, ul li { margin: 0.35rem 0; }
+code { font: 0.86rem/1.4 ui-monospace, Menlo, monospace; }
+@media (prefers-color-scheme: dark) {
+  body { background: #161412; color: #f3eee6; }
+  .lede, .note { color: #c9bfb3; }
+  .diagram { background: #241f1b; }
+  .box { background: #1c1916; border-color: #3a332c; }
+  a, .arrow, .box strong { color: #e2b8a4; }
+  .wall { border-color: #e2b8a4; }
+}
+</style></head><body><main>
+<p class="back"><a href="../">Bakeoff</a> · <a href="architecture.html">Architecture</a></p>
+<h1>TestFlight runbook</h1>
+<p class="lede">How to get a native iOS build of this idea onto your phone through TestFlight. This is the path. It is not a shipped app yet. The website prototypes stay as references. Do not wrap them in a web view and call that the product.</p>
+
+<h2>What the iOS app is</h2>
+<div class="diagram">
+  <div class="row">
+    <div class="box"><strong>SwiftUI</strong>The conversation. One thread is enough for the first flight.</div>
+    <div class="arrow">→</div>
+    <div class="box"><strong>App sandbox</strong>Messages in a local database inside the app container. Not iCloud. Not a server.</div>
+    <div class="arrow">→</div>
+    <div class="box"><strong>On-device runtime</strong>A small instruct model run by a native engine (MLX or llama.cpp on the GPU). The text never leaves the process.</div>
+  </div>
+</div>
+<p>Ship a small quant in the app, or have the first launch import a weights file the person already has. Do not call OpenAI, Anthropic, xAI, or Ollama-on-a-Mac from the phone. A model that only works while a desktop is on is not the TestFlight idea.</p>
+
+<h2>What you need before Xcode</h2>
+<ol>
+  <li>A Mac with a current Xcode.</li>
+  <li>An Apple Developer Program membership for the Apple ID that will upload the build. TestFlight requires that membership. A free Apple ID can run on your own phone from Xcode, but it cannot upload to TestFlight.</li>
+  <li>A bundle identifier you own, for example <code>com.mikail.privatechat</code>.</li>
+  <li>A decision on the first model: something in the 1B class, quantized, so the upload is a normal archive and the phone can answer without a desktop. Larger models can wait until the loop (type, reply, relaunch, history still there) is proven.</li>
+</ol>
+
+<h2>The build, in order</h2>
+<ol>
+  <li>In Xcode, create an iOS App (SwiftUI, Swift). Set the team and the bundle id. Turn off iCloud, push, and any analytics capability.</li>
+  <li>Store messages in the app container (SwiftData or a small SQLite file). Write the user line before inference. Write the reply after. On failure, keep the user line and show an error.</li>
+  <li>Add the on-device engine and the weights. The engine loads from the bundle or from a file the user imported. There is no chat URL in the app.</li>
+  <li>Run it on a simulator, then on your phone with a cable, before any upload. Check three things: a reply appears, the reply is still there after you kill the app, and the device shows no connection to a chat host while you send (Xcode’s network instrument, or a packet capture, while the phone is off Wi-Fi except for nothing).</li>
+  <li>In App Store Connect, create the app with the same bundle id. You do not submit it for App Store review.</li>
+  <li>In Xcode, archive the app (Any iOS Device), then Distribute → TestFlight / App Store Connect. Wait until the build finishes processing.</li>
+  <li>Internal testing: add your Apple ID on the team. Internal testers can install without a beta review. External testing needs a short beta review and a privacy note. Start internal.</li>
+  <li>Install TestFlight on the phone, accept the build, and repeat the same three checks on the installed build, not only the Xcode-run one.</li>
+</ol>
+
+<h2>What to tell TestFlight’s privacy questions</h2>
+<p>The app does not collect the conversation. Say that messages and the model stay on device, and that the only network use you know of is Apple’s own TestFlight install and crash reporting if you left crash reporting on. Turn crash reporting off for this flight if you want the claim to stay simple. Do not claim the transcript is encrypted at rest unless you have actually added that. The app sandbox is not the same as encryption.</p>
+
+<h2>Leave out of the first flight</h2>
+<ul>
+  <li>Accounts, sync, share extensions, and iCloud backup of the transcript.</li>
+  <li>A model picker, voice, and images.</li>
+  <li>System One (Laya and the others). Add that only after a reply can be produced with no network.</li>
+  <li>The Kiln and Still web pages. They explain the wall. They are not the iOS binary.</li>
+</ul>
+<p class="note">When you want this built in a repo rather than described, the first milestone is the three checks on a cable-installed build. TestFlight is the step after that, not before.</p>
+</main></body></html>
